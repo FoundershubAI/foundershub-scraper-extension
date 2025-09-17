@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "build": "npm run lint && npm run package",
+    "update-manifest": "node scripts/updateManifest.js",
+    "build": "npm run update-manifest && npm run lint && npm run package",
     "package": "node scripts/package.js",
     "clean": "rm -rf dist/ *.zip *.crx"
   },
@@ -25,15 +26,14 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/foundershub-chrome-extension.git"
+    "url": "git+https://github.com/FoundershubAI/foundershub-scraper-extension.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/foundershub-chrome-extension/issues"
+    "url": "https://github.com/FoundershubAI/foundershub-scraper-extension/issues"
   },
-  "homepage": "https://github.com/your-username/foundershub-chrome-extension#readme",
+  "homepage": "https://github.com/FoundershubAI/foundershub-scraper-extension#readme",
   "devDependencies": {
-    "eslint": "^8.0.0",
-    "eslint-plugin-webextensions": "^0.6.0"
+    "eslint": "^8.0.0"
   },
   "engines": {
     "node": ">=14.0.0"

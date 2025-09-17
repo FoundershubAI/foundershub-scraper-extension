@@ -1,15 +1,97 @@
-// Base API configuration
-const API_BASE_URL = "http://localhost:8000";
+// Load configuration from .env file
+let config = { NEXT_PUBLIC_API_URL: null };
+
+// Load config asynchronously
+async function loadConfig() {
+  try {
+    // Check if we're in a service worker context
+    if (typeof document === "undefined") {
+      // Service worker context - load config directly
+      const response = await fetch(chrome.runtime.getURL(".env"));
+      if (response.ok) {
+        const envContent = await response.text();
+        config = parseEnvFile(envContent);
+      } else {
+        throw new Error("Could not load .env file");
+      }
+      return config;
+    } else {
+      // Content script context - load via script tag
+      const script = document.createElement("script");
+      script.src = chrome.runtime.getURL("config.js");
+
+      return new Promise((resolve) => {
+        script.onload = async () => {
+          if (window.CONFIG) {
+            // Wait for config to be loaded
+            await window.CONFIG.loadConfig();
+            config = window.CONFIG.getAll();
+          }
+          resolve(config);
+        };
+        script.onerror = () => {
+          console.warn("Could not load config.js, using defaults");
+          resolve(config);
+        };
+        document.head.appendChild(script);
+      });
+    }
+  } catch (error) {
+    console.warn("Error loading config:", error);
+    return config;
+  }
+}
+
+// Parse .env file content
+function parseEnvFile(content) {
+  const lines = content.split("\n");
+  const config = {};
+
+  lines.forEach((line) => {
+    // Skip empty lines and comments
+    if (!line.trim() || line.trim().startsWith("#")) {
+      return;
+    }
+
+    // Parse KEY=VALUE format
+    const equalIndex = line.indexOf("=");
+    if (equalIndex > 0) {
+      const key = line.substring(0, equalIndex).trim();
+      let value = line.substring(equalIndex + 1).trim();
+
+      // Convert string values to appropriate types
+      if (value === "true") value = true;
+      else if (value === "false") value = false;
+      else if (!isNaN(value) && value !== "") value = Number(value);
+
+      config[key] = value;
+    }
+  });
+
+  return config;
+}
+
+// Base API configuration - will be updated when config loads
+let NEXT_PUBLIC_API_URL = null;
 
 // Create axios-like fetch wrapper
 class ApiService {
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = NEXT_PUBLIC_API_URL;
+  }
+
+  // Update base URL when config loads
+  updateBaseURL() {
+    this.baseURL = config.NEXT_PUBLIC_API_URL;
   }
 
   // Generic request method
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    console.log("Making API request to:", url);
+    console.log("Base URL:", this.baseURL);
+    console.log("Endpoint:", endpoint);
+
     const config = {
       method: "GET",
       headers: {
@@ -24,7 +106,9 @@ class ApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const data = await response.json();
@@ -105,6 +189,18 @@ class ApiService {
 // Create singleton instance
 const apiService = new ApiService();
 
+// Initialize config loading
+loadConfig().then(() => {
+  console.log("Configuration loaded:", config);
+  console.log("NEXT_PUBLIC_API_URL from config:", config.NEXT_PUBLIC_API_URL);
+  // Update NEXT_PUBLIC_API_URL and apiService baseURL
+  NEXT_PUBLIC_API_URL = config.NEXT_PUBLIC_API_URL;
+  console.log("NEXT_PUBLIC_API_URL updated to:", NEXT_PUBLIC_API_URL);
+  // Update the local apiService instance
+  apiService.updateBaseURL();
+  console.log("apiService baseURL updated to:", apiService.baseURL);
+});
+
 // Authentication endpoints
 const authService = {
   // Login user
@@ -142,7 +238,7 @@ const dataService = {
         raw_data: rawData,
         site_domain: siteDomain,
       },
-      options,
+      options
     );
   },
 
@@ -156,7 +252,7 @@ const dataService = {
         raw_data: rawData,
         site_domain: siteDomain,
       },
-      options,
+      options
     );
   },
 
@@ -168,7 +264,7 @@ const dataService = {
       {
         data: dataArray,
       },
-      options,
+      options
     );
   },
 
@@ -206,7 +302,11 @@ const workspaceService = {
   // Switch workspace
   switchWorkspace: async (workspaceUid) => {
     const options = await apiService.addAuthHeader();
-    return apiService.post("/api/v2/workspaces/switch/", { workspace_uid: workspaceUid }, options);
+    return apiService.post(
+      "/api/v2/workspaces/switch/",
+      { workspace_uid: workspaceUid },
+      options
+    );
   },
 };
 
