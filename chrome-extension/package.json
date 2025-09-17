@@ -1,0 +1,41 @@
+{
+  "name": "foundershub-chrome-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension for scraping data from websites and sending it to FoundersHub backend",
+  "main": "background.js",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "build": "npm run lint && npm run package",
+    "package": "node scripts/package.js",
+    "clean": "rm -rf dist/ *.zip *.crx"
+  },
+  "keywords": [
+    "chrome-extension",
+    "web-scraping",
+    "data-extraction",
+    "foundershub",
+    "linkedin",
+    "twitter",
+    "github",
+    "flipkart",
+    "myntra"
+  ],
+  "author": "FoundersHub Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/foundershub-chrome-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/foundershub-chrome-extension/issues"
+  },
+  "homepage": "https://github.com/your-username/foundershub-chrome-extension#readme",
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "eslint-plugin-webextensions": "^0.6.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "FoundersHub Data Scraper",
+  "version": "1.0.0",
+  "description": "Chrome extension for scraping data from websites and sending it to FoundersHub backend",
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": [
+    "https://*.linkedin.com/*",
+    "https://*.twitter.com/*",
+    "https://*.x.com/*",
+    "https://*.github.com/*",
+    "https://*.flipkart.com/*",
+    "https://*.myntra.com/*",
+    "http://localhost:8000/*",
+    "https://api.foundershub.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["utils/schemaMapper.js", "utils/accountScraper.js", "content-scripts/scraper.js"],
+      "css": ["content-scripts/scraper-styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "FoundersHub Data Scraper",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["services/*.js", "utils/*.js", "content-scripts/*.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

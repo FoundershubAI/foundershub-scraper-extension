@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FoundersHub Data Scraper</title>
+    <style>
+      body {
+        width: 350px;
+        padding: 20px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+        opacity: 0.9;
+      }
+
+      .login-section,
+      .scraper-section {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        backdrop-filter: blur(10px);
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      input {
+        width: 100%;
+        padding: 8px;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      .password-container {
+        position: relative;
+      }
+
+      .password-container input {
+        padding-right: 35px;
+      }
+
+      .password-toggle {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: #666;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+      }
+
+      .password-toggle:hover {
+        color: #333;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+      }
+
+      .btn-primary {
+        background: #4caf50;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #45a049;
+      }
+
+      .btn-primary:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .btn-danger {
+        background: #f44336;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #da190b;
+      }
+
+      .status {
+        text-align: center;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        font-size: 12px;
+      }
+
+      .status.success {
+        background: rgba(76, 175, 80, 0.2);
+        border: 1px solid #4caf50;
+      }
+
+      .status.error {
+        background: rgba(244, 67, 54, 0.2);
+        border: 1px solid #f44336;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .workspace-info {
+        font-size: 11px;
+        opacity: 0.8;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo">FH Data Scraper</div>
+      <div class="subtitle">Extract data from any website</div>
+    </div>
+
+    <div id="status" class="status hidden"></div>
+
+    <div id="login-section" class="login-section">
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" placeholder="Enter your email" />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <div class="password-container">
+          <input type="password" id="password" placeholder="Enter your password" />
+          <button type="button" class="password-toggle" id="password-toggle">👁️</button>
+        </div>
+      </div>
+
+      <button id="login-btn" class="btn btn-primary">Login</button>
+    </div>
+
+    <div id="scraper-section" class="scraper-section hidden">
+      <div class="workspace-info">
+        <strong>Status:</strong> <span id="user-status">Connected</span><br />
+        <strong>Workspace:</strong> <span id="workspace-info">Active</span>
+      </div>
+
+      <button id="logout-btn" class="btn btn-danger">Logout</button>
+    </div>
+
+    <!-- Load API services first -->
+    <script src="../services/storageService.js"></script>
+    <script src="../services/apiService.js"></script>
+
+    <!-- Then load popup script -->
+    <script src="popup.js"></script>
+  </body>
+</html>
