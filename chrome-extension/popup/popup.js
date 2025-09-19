@@ -455,6 +455,44 @@ class PopupManager {
         const fieldName = field.name;
         const fieldType = field.data_type || "text";
 
+        // For user and select fields, only show template options
+        if (fieldType === "user" && field.options) {
+          return `
+            <div class="field-mapping-item">
+              <label>${fieldName} (${fieldType})</label>
+              <select data-template-field="${fieldName}">
+                <option value="">-- Select user --</option>
+                ${field.options
+                  .map(
+                    (option) =>
+                      `<option value="template_option:${
+                        option.user_id || option.value
+                      }">${
+                        option.value || option.display_name || option.email
+                      }</option>`
+                  )
+                  .join("")}
+              </select>
+            </div>
+          `;
+        } else if (fieldType === "select" && field.options) {
+          return `
+            <div class="field-mapping-item">
+              <label>${fieldName} (${fieldType})</label>
+              <select data-template-field="${fieldName}">
+                <option value="">-- Select option --</option>
+                ${field.options
+                  .map(
+                    (option) =>
+                      `<option value="template_option:${option.value}">${option.value}</option>`
+                  )
+                  .join("")}
+              </select>
+            </div>
+          `;
+        }
+
+        // For other field types, show scraped fields
         return `
           <div class="field-mapping-item">
             <label>${fieldName} (${fieldType})</label>
@@ -474,19 +512,19 @@ class PopupManager {
 
     // Render scraped fields info
     this.scrapedFieldsList.innerHTML = scrapedFields
-      .map(
-        (field) =>
-          `<div class="field-mapping-item">
-        <label>${field}</label>
-        <div style="font-size: 10px; color: rgba(255,255,255,0.7);">
-          ${
-            typeof this.scrapedData[field] === "object"
-              ? JSON.stringify(this.scrapedData[field])
-              : String(this.scrapedData[field])
-          }
-        </div>
-      </div>`
-      )
+      .map((field) => {
+        const value =
+          typeof this.scrapedData[field] === "object"
+            ? JSON.stringify(this.scrapedData[field])
+            : String(this.scrapedData[field]);
+
+        return `
+            <div class="scraped-field-item">
+              <span class="field-name">${field}</span>
+              <div class="field-value">${value}</div>
+            </div>
+          `;
+      })
       .join("");
   }
 
@@ -508,13 +546,17 @@ class PopupManager {
         const select = document.querySelector(
           `[data-template-field="${fieldName}"]`
         );
-        const selectedScrapedField = select.value;
+        const selectedValue = select.value;
 
-        if (
-          selectedScrapedField &&
-          this.scrapedData[selectedScrapedField] !== undefined
-        ) {
-          mappedValues[fieldName] = this.scrapedData[selectedScrapedField];
+        if (selectedValue) {
+          if (selectedValue.startsWith("template_option:")) {
+            // Handle template option selection
+            const optionValue = selectedValue.replace("template_option:", "");
+            mappedValues[fieldName] = optionValue;
+          } else if (this.scrapedData[selectedValue] !== undefined) {
+            // Handle scraped field selection
+            mappedValues[fieldName] = this.scrapedData[selectedValue];
+          }
         }
       });
 

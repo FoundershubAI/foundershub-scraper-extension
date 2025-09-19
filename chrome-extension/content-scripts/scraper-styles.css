@@ -35,7 +35,7 @@
   right: 2px;
   width: 14px;
   height: 14px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #dc3545;
   border: none;
   border-radius: 2px;
   color: white;
@@ -49,7 +49,7 @@
 }
 
 .fh-close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #c82333;
 }
 
 .fh-scraper-logo {
