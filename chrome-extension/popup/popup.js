@@ -62,47 +62,15 @@ class PopupManager {
       const result = await chrome.storage.local.get([
         "access_token",
         "user_data",
-        "workspace_uid",
       ]);
 
       if (result.access_token) {
         this.showScraperSection();
 
-        // Try to get workspace info if available
-        let workspaceInfo = null;
-        if (result.workspace_uid) {
-          try {
-            const workspacesResponse =
-              await window.workspaceService.getWorkspaces();
-            if (
-              workspacesResponse.status === 200 &&
-              workspacesResponse.data?.length > 0
-            ) {
-              // Find the current workspace
-              for (const account of workspacesResponse.data) {
-                if (account.workspaces) {
-                  const currentWorkspace = account.workspaces.find(
-                    (ws) =>
-                      (ws.uid || ws.workspace_uid) === result.workspace_uid
-                  );
-                  if (currentWorkspace) {
-                    workspaceInfo = currentWorkspace;
-                    break;
-                  }
-                } else if (account.uid === result.workspace_uid) {
-                  // If the workspace data is directly in the account object
-                  workspaceInfo = account;
-                  break;
-                }
-              }
-            }
-          } catch (error) {
-            // Workspace fetch failed, continue without workspace info
-          }
-        }
+        // Get active workspace UID from localStorage
+        const workspaceUid = this.getActiveWorkspaceUid();
 
-        this.updateUserInfo(result.user_data, workspaceInfo);
-        this.workspaceUid = result.workspace_uid;
+        this.updateUserInfo(result.user_data, workspaceUid);
         await this.initializeTemplateMapping();
       } else {
         this.showLoginSection();
@@ -131,12 +99,7 @@ class PopupManager {
         return;
       }
 
-      if (!window.workspaceService) {
-        this.showError(
-          "Workspace service not loaded. Please refresh the extension."
-        );
-        return;
-      }
+      // Workspace service removed - not needed for local storage only
 
       if (!window.storageService) {
         this.showError(
@@ -155,48 +118,15 @@ class PopupManager {
         await window.storageService.setAuthTokens(access, null);
         await window.storageService.setUserData(userData);
 
-        // Fetch user workspaces
-        const workspacesResponse =
-          await window.workspaceService.getWorkspaces();
+        // Initialize active workspace from login response
+        const workspaceUid = await this.initializeActiveWorkspace(userData);
+        console.log("🏢 Active workspace UID:", workspaceUid);
 
-        if (
-          workspacesResponse.status === 200 &&
-          workspacesResponse.data?.length > 0
-        ) {
-          // The workspaces response is directly an array, not nested in results
-          const firstAccount = workspacesResponse.data[0];
-
-          if (
-            firstAccount &&
-            firstAccount.workspaces &&
-            firstAccount.workspaces.length > 0
-          ) {
-            // Get first workspace from first account
-            const firstWorkspace = firstAccount.workspaces[0];
-            await window.storageService.setWorkspaceUid(
-              firstWorkspace.uid || firstWorkspace.workspace_uid
-            );
-
-            this.showSuccess("Login successful!");
-            setTimeout(() => {
-              this.showScraperSection();
-              this.updateUserInfo(userData, firstWorkspace);
-            }, 1000);
-          } else if (firstAccount && firstAccount.uid) {
-            // If the workspace data is directly in the account object (based on console log)
-            await window.storageService.setWorkspaceUid(firstAccount.uid);
-
-            this.showSuccess("Login successful!");
-            setTimeout(() => {
-              this.showScraperSection();
-              this.updateUserInfo(userData, firstAccount);
-            }, 1000);
-          } else {
-            this.showError("No workspaces found in your account");
-          }
-        } else {
-          this.showError("Failed to fetch workspaces");
-        }
+        this.showSuccess("Login successful!");
+        setTimeout(() => {
+          this.showScraperSection();
+          this.updateUserInfo(userData, workspaceUid);
+        }, 1000);
       } else {
         this.showError(response.message || "Login failed");
       }
@@ -232,15 +162,21 @@ class PopupManager {
     this.loadScrapedData();
   }
 
-  updateUserInfo(userData, workspace = null) {
+  updateUserInfo(userData, workspaceUid = null) {
     const userStatus = document.getElementById("user-status");
     const workspaceInfo = document.getElementById("workspace-info");
 
     if (userData) {
       userStatus.textContent = userData.email || "Connected";
-      workspaceInfo.textContent = workspace
-        ? workspace.name || "Active"
-        : "Active";
+
+      if (workspaceUid) {
+        workspaceInfo.textContent = `Workspace: ${workspaceUid.substring(
+          0,
+          8
+        )}...`;
+      } else {
+        workspaceInfo.textContent = "No workspace";
+      }
     }
   }
 
@@ -272,20 +208,27 @@ class PopupManager {
     this.showStatus(message, "error");
   }
 
-  // Refresh Data Method
+  // Refresh Data Method - Clear all data
   async handleRefreshData() {
+    console.log("🔄 Refresh data button clicked - clearing all data");
     this.refreshDataBtn.disabled = true;
-    this.refreshDataBtn.textContent = "Refreshing...";
+    this.refreshDataBtn.textContent = "Clearing...";
 
     try {
-      await this.loadScrapedData();
-      this.showSuccess("Data refreshed successfully!");
+      // Clear all scraped data
+      await window.storageService.setScrapedData([]);
+
+      // Update the preview to show no data
+      this.scrapedData = null;
+      this.updateScrapedDataPreview();
+
+      this.showSuccess("All data cleared successfully!");
     } catch (error) {
-      console.error("Error refreshing data:", error);
-      this.showError("Failed to refresh data");
+      console.error("❌ Error clearing data:", error);
+      this.showError("Failed to clear data");
     } finally {
       this.refreshDataBtn.disabled = false;
-      this.refreshDataBtn.textContent = "Refresh Data";
+      this.refreshDataBtn.textContent = "Clear Data";
     }
   }
 
@@ -301,38 +244,40 @@ class PopupManager {
 
   async loadScrapedData() {
     try {
-      if (!this.workspaceUid) {
-        this.scrapedData = null;
+      console.log("🔄 Loading scraped data from local storage...");
+
+      // Load scraped data from local storage (should be only one item)
+      const scrapedDataArray = await window.storageService.getScrapedData();
+
+      console.log("📊 Found scraped data:", scrapedDataArray);
+
+      if (scrapedDataArray && scrapedDataArray.length > 0) {
+        // Store the data for preview (should be only one item)
+        this.scrapedData = scrapedDataArray;
         this.updateScrapedDataPreview();
-        return;
-      }
-
-      const response = await this.fetchLastScrapedData();
-
-      if (response && response.data && response.status === 200) {
-        const apiData = response.data;
-
-        if (apiData && (apiData.raw_data || apiData.processed_data)) {
-          this.scrapedData = apiData.raw_data || apiData.processed_data;
-          this.updateScrapedDataPreview();
-        } else {
-          this.scrapedData = null;
-          this.updateScrapedDataPreview();
-        }
+        console.log("✅ Loaded scraped data");
       } else {
         this.scrapedData = null;
         this.updateScrapedDataPreview();
+        console.log("ℹ️ No scraped data found");
       }
     } catch (error) {
+      console.error("❌ Error loading scraped data:", error);
       this.scrapedData = null;
       this.updateScrapedDataPreview();
     }
   }
 
   updateScrapedDataPreview() {
-    if (this.scrapedData) {
+    if (this.scrapedData && this.scrapedData.length > 0) {
+      console.log("📋 Updating preview with scraped data");
+
+      // Show only the actual scraped data (should be only one item now)
+      const scrapedDataItem = this.scrapedData[0];
+      const actualScrapedData = scrapedDataItem.scrapedData;
+
       this.scrapedDataPreview.textContent = JSON.stringify(
-        this.scrapedData,
+        actualScrapedData,
         null,
         2
       );
@@ -343,43 +288,75 @@ class PopupManager {
   }
 
   async loadTemplates() {
-    if (!this.workspaceUid) {
-      this.templatesContainer.innerHTML =
-        '<p class="loading">No workspace selected</p>';
-      return;
-    }
-
     try {
+      console.log("🔄 Loading templates...");
+
+      // Wait for config to be loaded
+      console.log("⏳ Waiting for config to load...");
+      await this.waitForConfig();
+
+      const workspaceUid = this.getActiveWorkspaceUid();
+      console.log("🔍 Retrieved workspace UID:", workspaceUid);
+
+      if (!workspaceUid) {
+        console.log("❌ No workspace UID found");
+        this.templatesContainer.innerHTML =
+          '<p class="loading">No workspace selected</p>';
+        return;
+      }
+
       this.templatesContainer.innerHTML =
         '<p class="loading">Loading templates...</p>';
 
-      const response = await this.fetchTemplates();
+      console.log("📡 Fetching templates for workspace:", workspaceUid);
+      const response = await this.fetchTemplates(workspaceUid);
+      console.log("📡 Templates response:", response);
 
       if (response && response.data && response.data.results) {
         this.templates = response.data.results;
+        console.log("✅ Templates loaded:", this.templates.length);
         this.renderTemplates();
       } else {
+        console.log("❌ No templates in response");
         this.templatesContainer.innerHTML =
           '<p class="loading">No templates found</p>';
       }
     } catch (error) {
+      console.error("❌ Error loading templates:", error);
       this.templatesContainer.innerHTML =
         '<p class="loading">Error loading templates</p>';
     }
   }
 
-  async fetchTemplates() {
-    const options = await this.getAuthHeaders();
-    return await window.apiService.get(
-      `/api/metric-tracker/templates/?workspace_uid=${this.workspaceUid}`,
-      options
-    );
+  async waitForConfig() {
+    return new Promise((resolve) => {
+      const checkConfig = () => {
+        if (
+          window.apiService &&
+          window.apiService.baseURL &&
+          window.apiService.baseURL !== null
+        ) {
+          console.log("✅ Config loaded, API URL:", window.apiService.baseURL);
+          resolve();
+        } else {
+          console.log(
+            "⏳ Config not ready yet, API URL:",
+            window.apiService?.baseURL
+          );
+          setTimeout(checkConfig, 100);
+        }
+      };
+      checkConfig();
+    });
   }
 
-  async fetchLastScrapedData() {
+  // Template API Methods - Re-enabled with workspace support
+  async fetchTemplates(workspaceUid) {
     const options = await this.getAuthHeaders();
-    const url = `/api/v2/extension/data/last_scraped_data/?workspace_uid=${this.workspaceUid}`;
-    return await window.apiService.get(url, options);
+    return await window.apiService.get(
+      `/api/metric-tracker/templates/?workspace_uid=${workspaceUid}`,
+      options
+    );
   }
 
   renderTemplates() {
@@ -417,7 +394,11 @@ class PopupManager {
         .querySelector(`[data-template-id="${templateId}"]`)
         .classList.add("selected");
 
-      const template = await this.fetchTemplateDetails(templateId);
+      const workspaceUid = this.getActiveWorkspaceUid();
+      const template = await this.fetchTemplateDetails(
+        templateId,
+        workspaceUid
+      );
       this.selectedTemplate = template;
 
       this.fieldMappingSection.classList.remove("hidden");
@@ -427,17 +408,21 @@ class PopupManager {
     }
   }
 
-  async fetchTemplateDetails(templateId) {
+  async fetchTemplateDetails(templateId, workspaceUid) {
     const options = await this.getAuthHeaders();
     const response = await window.apiService.get(
-      `/api/metric-tracker/templates/${templateId}/data/?page=1&workspace_uid=${this.workspaceUid}`,
+      `/api/metric-tracker/templates/${templateId}/data/?page=1&workspace_uid=${workspaceUid}`,
       options
     );
     return response.data;
   }
 
   renderFieldMapping() {
-    if (!this.selectedTemplate || !this.scrapedData) {
+    if (
+      !this.selectedTemplate ||
+      !this.scrapedData ||
+      this.scrapedData.length === 0
+    ) {
       this.templateFieldsList.innerHTML =
         '<p class="loading">No template or scraped data available</p>';
       this.scrapedFieldsList.innerHTML =
@@ -447,7 +432,7 @@ class PopupManager {
 
     // Get template fields from columns
     const templateFields = this.selectedTemplate.template?.columns || [];
-    const scrapedFields = Object.keys(this.scrapedData);
+    const scrapedFields = Object.keys(this.scrapedData[0].scrapedData);
 
     // Render template fields with dropdowns
     this.templateFieldsList.innerHTML = templateFields
@@ -513,15 +498,14 @@ class PopupManager {
     // Render scraped fields info
     this.scrapedFieldsList.innerHTML = scrapedFields
       .map((field) => {
-        const value =
-          typeof this.scrapedData[field] === "object"
-            ? JSON.stringify(this.scrapedData[field])
-            : String(this.scrapedData[field]);
+        const value = this.scrapedData[0].scrapedData[field];
+        const displayValue =
+          typeof value === "object" ? JSON.stringify(value) : String(value);
 
         return `
             <div class="scraped-field-item">
               <span class="field-name">${field}</span>
-              <div class="field-value">${value}</div>
+              <div class="field-value">${displayValue}</div>
             </div>
           `;
       })
@@ -529,7 +513,11 @@ class PopupManager {
   }
 
   async handleSaveRow() {
-    if (!this.selectedTemplate || !this.scrapedData) {
+    if (
+      !this.selectedTemplate ||
+      !this.scrapedData ||
+      this.scrapedData.length === 0
+    ) {
       this.showError("No template selected or scraped data available");
       return;
     }
@@ -553,9 +541,12 @@ class PopupManager {
             // Handle template option selection
             const optionValue = selectedValue.replace("template_option:", "");
             mappedValues[fieldName] = optionValue;
-          } else if (this.scrapedData[selectedValue] !== undefined) {
+          } else if (
+            this.scrapedData[0].scrapedData[selectedValue] !== undefined
+          ) {
             // Handle scraped field selection
-            mappedValues[fieldName] = this.scrapedData[selectedValue];
+            mappedValues[fieldName] =
+              this.scrapedData[0].scrapedData[selectedValue];
           }
         }
       });
@@ -565,7 +556,8 @@ class PopupManager {
         return;
       }
 
-      const response = await this.saveRowToTemplate(mappedValues);
+      const workspaceUid = this.getActiveWorkspaceUid();
+      const response = await this.saveRowToTemplate(mappedValues, workspaceUid);
 
       if (response && (response.status === 200 || response.status === 201)) {
         this.showSuccess("Row saved successfully!");
@@ -589,15 +581,111 @@ class PopupManager {
     }
   }
 
-  async saveRowToTemplate(mappedValues) {
+  async saveRowToTemplate(mappedValues, workspaceUid) {
     const options = await this.getAuthHeaders();
     const payload = { values: mappedValues };
 
     return await window.apiService.post(
-      `/api/metric-tracker/templates/${this.selectedTemplate.template.uid}/data/?workspace_uid=${this.workspaceUid}`,
+      `/api/metric-tracker/templates/${this.selectedTemplate.template.uid}/data/?workspace_uid=${workspaceUid}`,
       payload,
       options
     );
+  }
+
+  // Workspace Management Functions
+  async initializeActiveWorkspace(userData) {
+    try {
+      console.log("🏢 Initializing active workspace from user data:", userData);
+
+      if (!userData.accounts || userData.accounts.length === 0) {
+        console.log("❌ No accounts found in user data");
+        return null;
+      }
+
+      // Priority 1: Find owner account with default workspace
+      for (const account of userData.accounts) {
+        if (account.is_owner && account.workspaces) {
+          const defaultWorkspace = account.workspaces.find(
+            (ws) => ws.is_default === true
+          );
+          if (defaultWorkspace) {
+            console.log(
+              "✅ Found owner account with default workspace:",
+              defaultWorkspace.uid
+            );
+            await this.setActiveWorkspaceUid(defaultWorkspace.uid);
+            return defaultWorkspace.uid;
+          }
+        }
+      }
+
+      // Priority 2: Find any default workspace
+      for (const account of userData.accounts) {
+        if (account.workspaces) {
+          const defaultWorkspace = account.workspaces.find(
+            (ws) => ws.is_default === true
+          );
+          if (defaultWorkspace) {
+            console.log("✅ Found default workspace:", defaultWorkspace.uid);
+            await this.setActiveWorkspaceUid(defaultWorkspace.uid);
+            return defaultWorkspace.uid;
+          }
+        }
+      }
+
+      // Priority 3: Use first available workspace
+      for (const account of userData.accounts) {
+        if (account.workspaces && account.workspaces.length > 0) {
+          const firstWorkspace = account.workspaces[0];
+          console.log(
+            "✅ Using first available workspace:",
+            firstWorkspace.uid
+          );
+          await this.setActiveWorkspaceUid(firstWorkspace.uid);
+          return firstWorkspace.uid;
+        }
+      }
+
+      console.log("❌ No workspaces found in any account");
+      return null;
+    } catch (error) {
+      console.error("❌ Error initializing active workspace:", error);
+      return null;
+    }
+  }
+
+  async setActiveWorkspaceUid(workspaceUid) {
+    try {
+      // Store in both localStorage and chrome.storage.local for cross-context access
+      localStorage.setItem("active_workspace_uid", workspaceUid);
+      await chrome.storage.local.set({ active_workspace_uid: workspaceUid });
+      console.log("💾 Stored active workspace UID:", workspaceUid);
+    } catch (error) {
+      console.error("❌ Error storing workspace UID:", error);
+    }
+  }
+
+  getActiveWorkspaceUid() {
+    try {
+      const workspaceUid = localStorage.getItem("active_workspace_uid");
+      console.log(
+        "🔍 Retrieved active workspace UID from localStorage:",
+        workspaceUid
+      );
+
+      // Also check chrome.storage.local for debugging
+      chrome.storage.local.get(["active_workspace_uid"]).then((result) => {
+        console.log(
+          "🔍 Retrieved active workspace UID from chrome.storage.local:",
+          result.active_workspace_uid
+        );
+      });
+
+      return workspaceUid;
+    } catch (error) {
+      console.error("❌ Error retrieving workspace UID:", error);
+      return null;
+    }
   }
 
   async getAuthHeaders() {
@@ -627,11 +715,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const maxAttempts = 50; // 5 seconds max
 
   const initPopup = () => {
-    if (
-      window.authService &&
-      window.workspaceService &&
-      window.storageService
-    ) {
+    if (window.authService && window.storageService) {
       new PopupManager();
     } else if (attempts < maxAttempts) {
       attempts++;

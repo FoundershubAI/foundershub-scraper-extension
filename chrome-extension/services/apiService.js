@@ -190,16 +190,21 @@ class ApiService {
 const apiService = new ApiService();
 
 // Initialize config loading
-loadConfig().then(() => {
-  console.log("Configuration loaded:", config);
-  console.log("NEXT_PUBLIC_API_URL from config:", config.NEXT_PUBLIC_API_URL);
-  // Update NEXT_PUBLIC_API_URL and apiService baseURL
-  NEXT_PUBLIC_API_URL = config.NEXT_PUBLIC_API_URL;
-  console.log("NEXT_PUBLIC_API_URL updated to:", NEXT_PUBLIC_API_URL);
-  // Update the local apiService instance
-  apiService.updateBaseURL();
-  console.log("apiService baseURL updated to:", apiService.baseURL);
-});
+loadConfig()
+  .then(() => {
+    console.log("Configuration loaded:", config);
+    console.log("NEXT_PUBLIC_API_URL from config:", config.NEXT_PUBLIC_API_URL);
+    // Update NEXT_PUBLIC_API_URL and apiService baseURL
+    NEXT_PUBLIC_API_URL = config.NEXT_PUBLIC_API_URL;
+    console.log("NEXT_PUBLIC_API_URL updated to:", NEXT_PUBLIC_API_URL);
+    // Update the local apiService instance
+    apiService.updateBaseURL();
+    console.log("apiService baseURL updated to:", apiService.baseURL);
+  })
+  .catch((error) => {
+    console.error("❌ Failed to load config:", error);
+    console.log("❌ Using null baseURL - API calls will fail");
+  });
 
 // Authentication endpoints
 const authService = {
@@ -213,10 +218,14 @@ const authService = {
     return apiService.post("/api/token/refresh/", { refresh: refreshToken });
   },
 
-  // Logout user
+  // Logout user (clear local storage only - no backend API needed)
   logout: async () => {
-    const options = await apiService.addAuthHeader();
-    return apiService.post("/user/logout/", {}, options);
+    try {
+      await chrome.storage.local.clear();
+      return { success: true, message: "Logged out successfully" };
+    } catch (error) {
+      throw new Error(`Logout failed: ${error.message}`);
+    }
   },
 
   // Get user profile
@@ -226,95 +235,13 @@ const authService = {
   },
 };
 
-// Data endpoints
-const dataService = {
-  // Save scraped data
-  saveData: async (url, rawData, siteDomain) => {
-    const options = await apiService.addAuthHeader();
-    return apiService.post(
-      "/api/v2/extension/data/save-data/",
-      {
-        url,
-        raw_data: rawData,
-        site_domain: siteDomain,
-      },
-      options
-    );
-  },
+// Data endpoints removed - using local storage instead
 
-  // Save scraped data with workspace UID
-  saveScrapedData: async (url, rawData, siteDomain, workspaceUid) => {
-    const options = await apiService.addAuthHeader();
-    return apiService.post(
-      `/api/v2/extension/data/save_data/?workspace_uid=${workspaceUid}`,
-      {
-        url,
-        raw_data: rawData,
-        site_domain: siteDomain,
-      },
-      options
-    );
-  },
-
-  // Bulk save data
-  bulkSaveData: async (dataArray) => {
-    const options = await apiService.addAuthHeader();
-    return apiService.post(
-      "/api/v2/extension/data/bulk-save-data/",
-      {
-        data: dataArray,
-      },
-      options
-    );
-  },
-
-  // Get all data
-  getData: async (filters = {}) => {
-    const options = await apiService.addAuthHeader();
-    const queryParams = new URLSearchParams(filters).toString();
-    const endpoint = queryParams
-      ? `/api/v2/extension/data/get-data/?${queryParams}`
-      : "/api/v2/extension/data/get-data/";
-    return apiService.get(endpoint, options);
-  },
-
-  // Get specific data item
-  getDataItem: async (uid) => {
-    const options = await apiService.addAuthHeader();
-    return apiService.get(`/api/v2/extension/data/${uid}/get-item/`, options);
-  },
-
-  // Delete data item
-  deleteDataItem: async (uid) => {
-    const options = await apiService.addAuthHeader();
-    return apiService.delete(`/api/v2/extension/data/${uid}/delete/`, options);
-  },
-};
-
-// Workspace endpoints
-const workspaceService = {
-  // Get user workspaces
-  getWorkspaces: async () => {
-    const options = await apiService.addAuthHeader();
-    return apiService.get("/api/v2/workspaces/", options);
-  },
-
-  // Switch workspace
-  switchWorkspace: async (workspaceUid) => {
-    const options = await apiService.addAuthHeader();
-    return apiService.post(
-      "/api/v2/workspaces/switch/",
-      { workspace_uid: workspaceUid },
-      options
-    );
-  },
-};
+// Workspace endpoints removed - not available in backend yet
 
 // Make services globally available (works in both window and service worker contexts)
 (function () {
   const globalScope = typeof window !== "undefined" ? window : self;
   globalScope.apiService = apiService;
   globalScope.authService = authService;
-  globalScope.dataService = dataService;
-  globalScope.workspaceService = workspaceService;
 })();

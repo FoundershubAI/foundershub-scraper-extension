@@ -10,7 +10,8 @@ class DataScraper {
     const hostname = window.location.hostname;
 
     if (hostname.includes("linkedin.com")) return "linkedin";
-    if (hostname.includes("twitter.com") || hostname.includes("x.com")) return "twitter";
+    if (hostname.includes("twitter.com") || hostname.includes("x.com"))
+      return "twitter";
     if (hostname.includes("github.com")) return "github";
     if (hostname.includes("flipkart.com")) return "flipkart";
     if (hostname.includes("myntra.com")) return "myntra";
@@ -54,9 +55,11 @@ class DataScraper {
     document.body.appendChild(ui);
 
     // Add event listeners
-    document.getElementById("fh-scrape-all-btn").addEventListener("click", () => {
-      this.scrapeAllData();
-    });
+    document
+      .getElementById("fh-scrape-all-btn")
+      .addEventListener("click", () => {
+        this.scrapeAllData();
+      });
 
     document.getElementById("fh-close-btn").addEventListener("click", () => {
       this.closeScraperUI();
@@ -84,7 +87,8 @@ class DataScraper {
     // Check if extension is available and wake up service worker
     if (!chrome.runtime || !chrome.runtime.sendMessage) {
       status.innerHTML = '<div class="fh-error">❌ Extension not loaded</div>';
-      button.innerHTML = '<span class="fh-scrape-icon">🔍</span> Scrape All Data';
+      button.innerHTML =
+        '<span class="fh-scrape-icon">🔍</span> Scrape All Data';
       button.disabled = false;
       return;
     }
@@ -123,13 +127,20 @@ class DataScraper {
         scraping_info: {
           profile_fields: Object.keys(profileData).filter(
             (key) =>
-              !["source", "url", "scrapedAt", "method", "error"].includes(key) && profileData[key],
+              !["source", "url", "scrapedAt", "method", "error"].includes(
+                key
+              ) && profileData[key]
           ).length,
           account_fields: Object.keys(accountData).filter(
             (key) =>
-              !["source", "url", "scrapedAt", "method", "error"].includes(key) && accountData[key],
+              !["source", "url", "scrapedAt", "method", "error"].includes(
+                key
+              ) && accountData[key]
           ).length,
-          total_unique_fields: Object.keys({ ...profileData, ...accountData }).filter(
+          total_unique_fields: Object.keys({
+            ...profileData,
+            ...accountData,
+          }).filter(
             (key) =>
               ![
                 "source",
@@ -140,7 +151,7 @@ class DataScraper {
                 "profile_data",
                 "account_data",
                 "scraping_info",
-              ].includes(key),
+              ].includes(key)
           ).length,
           scraped_at: new Date().toISOString(),
           data_priority: "account_data_overwrites_profile_data",
@@ -198,21 +209,25 @@ class DataScraper {
               "scraping_context",
             ].includes(key) &&
             combinedData[key] &&
-            combinedData[key] !== "",
+            combinedData[key] !== ""
         );
 
-        status.innerHTML = `<div class="fh-success">✅ Saved ${totalFields} fields!<br>📊 Profile: ${profileFields} | 👤 Account: ${accountFields}<br>📋 Available: ${availableFields.join(", ")}</div>`;
+        status.innerHTML = `<div class="fh-success">✅ Data saved locally!<br>📊 Profile: ${profileFields} | 👤 Account: ${accountFields}<br>📋 Available: ${availableFields.join(
+          ", "
+        )}</div>`;
         button.innerHTML = '<span class="fh-scrape-icon">✅</span> ✓';
       } else {
         throw new Error(response?.error || "Failed to save combined data");
       }
     } catch (error) {
       status.innerHTML = `<div class="fh-error">❌ Error: ${error.message}</div>`;
-      button.innerHTML = '<span class="fh-scrape-icon">🔍</span> Scrape All Data';
+      button.innerHTML =
+        '<span class="fh-scrape-icon">🔍</span> Scrape All Data';
     } finally {
       setTimeout(() => {
         button.disabled = false;
-        button.innerHTML = '<span class="fh-scrape-icon">🔍</span> Scrape All Data';
+        button.innerHTML =
+          '<span class="fh-scrape-icon">🔍</span> Scrape All Data';
         status.innerHTML = "";
       }, 3000);
     }
@@ -292,7 +307,8 @@ class DataScraper {
     }
 
     try {
-      status.innerHTML = '<div class="fh-info">🔍 Extracting account data...</div>';
+      status.innerHTML =
+        '<div class="fh-info">🔍 Extracting account data...</div>';
 
       // Initialize account scraper
       if (!window.AccountScraper) {
@@ -335,7 +351,9 @@ class DataScraper {
 
       if (response && response.success) {
         const fields = Object.keys(accountData).filter(
-          (key) => !["source", "url", "scrapedAt", "method"].includes(key) && accountData[key],
+          (key) =>
+            !["source", "url", "scrapedAt", "method"].includes(key) &&
+            accountData[key]
         ).length;
         status.innerHTML = `<div class="fh-success">✅ Saved ${fields} fields!</div>`;
         button.innerHTML = '<span class="fh-scrape-icon">✅</span> ✓';
@@ -468,13 +486,18 @@ class DataScraper {
 
     // Location
     data.address =
-      this.getTextContent(".text-body-small.inline.t-black--light.break-words") ||
-      this.getTextContent(".pv-top-card--list-bullet li:contains('location')") ||
+      this.getTextContent(
+        ".text-body-small.inline.t-black--light.break-words"
+      ) ||
+      this.getTextContent(
+        ".pv-top-card--list-bullet li:contains('location')"
+      ) ||
       this.getTextContent("[data-field='location_text']");
 
     // About section
     const aboutSection =
-      document.querySelector("#about") || document.querySelector("[data-field='summary']");
+      document.querySelector("#about") ||
+      document.querySelector("[data-field='summary']");
     if (aboutSection) {
       const aboutText = aboutSection.parentElement
         ?.querySelector(".break-words")
@@ -493,7 +516,7 @@ class DataScraper {
 
     // Connections and followers from the connections section
     const connectionElements = document.querySelectorAll(
-      ".pv-top-card--list-bullet span, .pv-top-card--list-bullet strong",
+      ".pv-top-card--list-bullet span, .pv-top-card--list-bullet strong"
     );
     connectionElements.forEach((el) => {
       const text = el.textContent.trim();
@@ -517,13 +540,15 @@ class DataScraper {
 
     // Education from structured data
     const eduElements = document.querySelectorAll(
-      "[data-field='education'] .pv-entity__summary-info, .education-section .pv-entity__summary-info",
+      "[data-field='education'] .pv-entity__summary-info, .education-section .pv-entity__summary-info"
     );
     if (eduElements.length > 0) {
       const education = [];
       eduElements.forEach((edu) => {
         const school = edu.querySelector("h3")?.textContent?.trim();
-        const degree = edu.querySelector(".pv-entity__degree-name")?.textContent?.trim();
+        const degree = edu
+          .querySelector(".pv-entity__degree-name")
+          ?.textContent?.trim();
         if (school) {
           education.push(degree ? `${degree} - ${school}` : school);
         }
@@ -589,10 +614,10 @@ class DataScraper {
 
     // Extract name from input fields (first and last name)
     const firstNameInput = document.querySelector(
-      'input[placeholder*="First"], input[value*="Ved"], input[name*="first"], input[id*="first"]',
+      'input[placeholder*="First"], input[value*="Ved"], input[name*="first"], input[id*="first"]'
     );
     const lastNameInput = document.querySelector(
-      'input[placeholder*="Last"], input[value*="Tiwari"], input[name*="last"], input[id*="last"]',
+      'input[placeholder*="Last"], input[value*="Tiwari"], input[name*="last"], input[id*="last"]'
     );
 
     if (firstNameInput && firstNameInput.value) {
@@ -604,19 +629,21 @@ class DataScraper {
 
     // Combine first and last name
     if (data.first_name || data.last_name) {
-      data.full_name = `${data.first_name || ""} ${data.last_name || ""}`.trim();
+      data.full_name = `${data.first_name || ""} ${
+        data.last_name || ""
+      }`.trim();
     }
 
     // Extract email from input field or text
     const emailInput = document.querySelector(
-      'input[type="email"], input[placeholder*="email"], input[value*="@"]',
+      'input[type="email"], input[placeholder*="email"], input[value*="@"]'
     );
     if (emailInput && emailInput.value) {
       data.email = emailInput.value.trim();
     } else {
       // Try to find email in text content
       const emailText = document.body.innerText.match(
-        /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
+        /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
       );
       if (emailText) {
         data.email = emailText[0];
@@ -625,7 +652,7 @@ class DataScraper {
 
     // Extract phone number from input field or text
     const phoneInput = document.querySelector(
-      'input[type="tel"], input[placeholder*="Mobile"], input[placeholder*="Phone"], input[value*="+91"]',
+      'input[type="tel"], input[placeholder*="Mobile"], input[placeholder*="Phone"], input[value*="+91"]'
     );
     if (phoneInput && phoneInput.value) {
       data.phone = phoneInput.value.trim();
@@ -639,9 +666,11 @@ class DataScraper {
 
     // Extract gender from radio buttons or select
     const maleRadio = document.querySelector(
-      'input[type="radio"][value="Male"], input[type="radio"]:checked',
+      'input[type="radio"][value="Male"], input[type="radio"]:checked'
     );
-    const femaleRadio = document.querySelector('input[type="radio"][value="Female"]');
+    const femaleRadio = document.querySelector(
+      'input[type="radio"][value="Female"]'
+    );
     if (maleRadio && maleRadio.checked) {
       data.gender = "Male";
     } else if (femaleRadio && femaleRadio.checked) {
@@ -650,7 +679,7 @@ class DataScraper {
 
     // Try to get any other personal info from form fields
     const allInputs = document.querySelectorAll(
-      'input[type="text"], input[type="email"], input[type="tel"]',
+      'input[type="text"], input[type="email"], input[type="tel"]'
     );
     allInputs.forEach((input) => {
       const value = input.value?.trim();
@@ -659,7 +688,10 @@ class DataScraper {
 
       if (value && value.length > 0) {
         // Map common field patterns
-        if ((placeholder?.includes("email") || name?.includes("email")) && !data.email) {
+        if (
+          (placeholder?.includes("email") || name?.includes("email")) &&
+          !data.email
+        ) {
           data.email = value;
         }
         if (
@@ -670,10 +702,16 @@ class DataScraper {
         ) {
           data.phone = value;
         }
-        if ((placeholder?.includes("first") || name?.includes("first")) && !data.first_name) {
+        if (
+          (placeholder?.includes("first") || name?.includes("first")) &&
+          !data.first_name
+        ) {
           data.first_name = value;
         }
-        if ((placeholder?.includes("last") || name?.includes("last")) && !data.last_name) {
+        if (
+          (placeholder?.includes("last") || name?.includes("last")) &&
+          !data.last_name
+        ) {
           data.last_name = value;
         }
       }
@@ -734,8 +772,12 @@ class DataScraper {
     const specElements = document.querySelectorAll("div[class*='_1HmOnV']");
 
     specElements.forEach((spec) => {
-      const key = spec.querySelector("div[class*='_1hKmbr']")?.textContent?.trim();
-      const value = spec.querySelector("div[class*='_21lJbe']")?.textContent?.trim();
+      const key = spec
+        .querySelector("div[class*='_1hKmbr']")
+        ?.textContent?.trim();
+      const value = spec
+        .querySelector("div[class*='_21lJbe']")
+        ?.textContent?.trim();
       if (key && value) {
         specs.push({ key, value });
       }
@@ -844,14 +886,16 @@ class DataScraper {
 
     // Look for "Email ID: email@domain.com" patterns
     const emailMatch = pageText.match(
-      /Email ID[:\s]+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
+      /Email ID[:\s]+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i
     );
     if (emailMatch && !data.email) {
       data.email = emailMatch[1].trim();
     }
 
     // Look for "Gender: MALE" patterns
-    const genderMatch = pageText.match(/Gender[:\s]+(MALE|FEMALE|male|female)/i);
+    const genderMatch = pageText.match(
+      /Gender[:\s]+(MALE|FEMALE|male|female)/i
+    );
     if (genderMatch && !data.gender) {
       data.gender = genderMatch[1].trim();
     }
@@ -953,7 +997,10 @@ class DataScraper {
 
       // Gender field
       if (
-        this.matchesPattern(placeholder + " " + name + " " + id + " " + label, ["gender", "sex"])
+        this.matchesPattern(placeholder + " " + name + " " + id + " " + label, [
+          "gender",
+          "sex",
+        ])
       ) {
         data.gender = value;
       }
@@ -980,7 +1027,11 @@ class DataScraper {
       ) {
         data.address = value;
       }
-      if (this.matchesPattern(placeholder + " " + name + " " + id + " " + label, ["city"])) {
+      if (
+        this.matchesPattern(placeholder + " " + name + " " + id + " " + label, [
+          "city",
+        ])
+      ) {
         data.city = value;
       }
       if (
@@ -1114,7 +1165,9 @@ class DataScraper {
     }
 
     if (!data.gender) {
-      const genderMatch = bodyText.match(/Gender[:\s]+(MALE|FEMALE|male|female|Male|Female)/i);
+      const genderMatch = bodyText.match(
+        /Gender[:\s]+(MALE|FEMALE|male|female|Male|Female)/i
+      );
       if (genderMatch) {
         data.gender = genderMatch[1].trim();
       }
@@ -1146,10 +1199,16 @@ class DataScraper {
 
       if (!content) return;
 
-      if ((name.includes("author") || property.includes("author")) && !data.full_name) {
+      if (
+        (name.includes("author") || property.includes("author")) &&
+        !data.full_name
+      ) {
         data.full_name = content;
       }
-      if ((name.includes("description") || property.includes("description")) && !data.bio) {
+      if (
+        (name.includes("description") || property.includes("description")) &&
+        !data.bio
+      ) {
         data.bio = content;
       }
     });
@@ -1158,7 +1217,9 @@ class DataScraper {
   // Extract structured data (JSON-LD, microdata)
   extractFromStructuredData(data) {
     // Try to find JSON-LD structured data
-    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+    const scripts = document.querySelectorAll(
+      'script[type="application/ld+json"]'
+    );
     scripts.forEach((script) => {
       try {
         const json = JSON.parse(script.textContent);
@@ -1167,7 +1228,8 @@ class DataScraper {
           if (json.email && !data.email) data.email = json.email;
           if (json.telephone && !data.phone) data.phone = json.telephone;
           if (json.jobTitle && !data.role) data.role = json.jobTitle;
-          if (json.worksFor?.name && !data.company) data.company = json.worksFor.name;
+          if (json.worksFor?.name && !data.company)
+            data.company = json.worksFor.name;
         }
       } catch (e) {
         // Invalid JSON, skip
@@ -1193,7 +1255,9 @@ class DataScraper {
 
   scrapeExperience() {
     const experiences = [];
-    const expElements = document.querySelectorAll(".experience-item, .pv-entity__summary-info");
+    const expElements = document.querySelectorAll(
+      ".experience-item, .pv-entity__summary-info"
+    );
 
     expElements.forEach((exp) => {
       experiences.push({
@@ -1209,7 +1273,9 @@ class DataScraper {
 
   scrapeEducation() {
     const education = [];
-    const eduElements = document.querySelectorAll(".education-item, .pv-entity__summary-info");
+    const eduElements = document.querySelectorAll(
+      ".education-item, .pv-entity__summary-info"
+    );
 
     eduElements.forEach((edu) => {
       education.push({
@@ -1410,8 +1476,10 @@ class DataScraper {
       // Personal Information
       names: /(?:Name|Full Name|Display Name)[:\s]*([A-Za-z\s]{2,50})/gi,
       titles: /(?:Title|Position|Role|Job Title)[:\s]*([A-Za-z\s]{2,100})/gi,
-      companies: /(?:Company|Organization|Employer|Work at)[:\s]*([A-Za-z0-9\s&.,'-]{2,100})/gi,
-      locations: /(?:Location|Address|City|Based in)[:\s]*([A-Za-z\s,.-]{2,100})/gi,
+      companies:
+        /(?:Company|Organization|Employer|Work at)[:\s]*([A-Za-z0-9\s&.,'-]{2,100})/gi,
+      locations:
+        /(?:Location|Address|City|Based in)[:\s]*([A-Za-z\s,.-]{2,100})/gi,
 
       // Social Media
       linkedinUrls: /linkedin\.com\/in\/[a-zA-Z0-9-]+/g,
@@ -1419,9 +1487,12 @@ class DataScraper {
       githubUrls: /github\.com\/[a-zA-Z0-9-]+/g,
 
       // Professional Information
-      skills: /(?:Skills|Expertise|Technologies)[:\s]*([A-Za-z0-9\s,.-]{2,200})/gi,
-      experience: /(?:Experience|Years|Work History)[:\s]*([A-Za-z0-9\s,.-]{2,200})/gi,
-      education: /(?:Education|Degree|University|College)[:\s]*([A-Za-z0-9\s,.-]{2,200})/gi,
+      skills:
+        /(?:Skills|Expertise|Technologies)[:\s]*([A-Za-z0-9\s,.-]{2,200})/gi,
+      experience:
+        /(?:Experience|Years|Work History)[:\s]*([A-Za-z0-9\s,.-]{2,200})/gi,
+      education:
+        /(?:Education|Degree|University|College)[:\s]*([A-Za-z0-9\s,.-]{2,200})/gi,
 
       // Numbers and Metrics
       followers: /(?:Followers?|Following)[:\s]*([0-9,KMB.]+)/gi,
@@ -1477,7 +1548,9 @@ class DataScraper {
                 !match.startsWith("16") &&
                 !match.startsWith("20") &&
                 !match.startsWith("12") &&
-                (match.includes("+") || match.includes("(") || match.includes("-"))
+                (match.includes("+") ||
+                  match.includes("(") ||
+                  match.includes("-"))
               );
             }
 
@@ -1595,8 +1668,11 @@ class DataScraper {
 
       if (name && content && content.length < 500) {
         // Filter relevant meta tags
-        if (name.match(/title|description|author|keywords|og:|twitter:|profile/i)) {
-          data[`meta_${name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`] = content;
+        if (
+          name.match(/title|description|author|keywords|og:|twitter:|profile/i)
+        ) {
+          data[`meta_${name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`] =
+            content;
         }
       }
     });
@@ -1624,7 +1700,7 @@ class DataScraper {
 
     // Input fields with values
     const inputs = document.querySelectorAll(
-      'input[value]:not([type="password"]):not([type="hidden"])',
+      'input[value]:not([type="password"]):not([type="hidden"])'
     );
     const inputData = {};
 
@@ -1659,7 +1735,7 @@ class DataScraper {
 
     // Profile images
     const images = document.querySelectorAll(
-      'img[src*="profile"], img[src*="avatar"], img[alt*="profile"], img[alt*="photo"]',
+      'img[src*="profile"], img[src*="avatar"], img[alt*="profile"], img[alt*="photo"]'
     );
     if (images.length > 0) {
       data.profile_images = Array.from(images)
@@ -1670,7 +1746,7 @@ class DataScraper {
 
     // External links
     const externalLinks = document.querySelectorAll(
-      'a[href^="http"]:not([href*="' + window.location.hostname + '"])',
+      'a[href^="http"]:not([href*="' + window.location.hostname + '"])'
     );
     if (externalLinks.length > 0) {
       data.external_links = Array.from(externalLinks)
@@ -1678,7 +1754,9 @@ class DataScraper {
           url: link.href,
           text: link.textContent?.trim(),
         }))
-        .filter((link) => link.text && link.text.length > 0 && link.text.length < 100)
+        .filter(
+          (link) => link.text && link.text.length > 0 && link.text.length < 100
+        )
         .slice(0, 10);
     }
 
@@ -1690,7 +1768,9 @@ class DataScraper {
     const data = {};
 
     // JSON-LD structured data
-    const jsonLdScripts = document.querySelectorAll('script[type="application/ld+json"]');
+    const jsonLdScripts = document.querySelectorAll(
+      'script[type="application/ld+json"]'
+    );
     jsonLdScripts.forEach((script, index) => {
       try {
         const jsonData = JSON.parse(script.textContent);
@@ -1711,7 +1791,8 @@ class DataScraper {
         const propElements = element.querySelectorAll("[itemprop]");
         propElements.forEach((propEl) => {
           const prop = propEl.getAttribute("itemprop");
-          const value = propEl.getAttribute("content") || propEl.textContent?.trim();
+          const value =
+            propEl.getAttribute("content") || propEl.textContent?.trim();
           if (prop && value) {
             properties[prop] = value;
           }
@@ -1740,12 +1821,15 @@ class DataScraper {
       "linkedin.com": {
         selectors: {
           profile_name: ".text-heading-xlarge, .pv-text-details__left-panel h1",
-          headline: ".text-body-medium.break-words, .pv-text-details__left-panel .text-body-medium",
+          headline:
+            ".text-body-medium.break-words, .pv-text-details__left-panel .text-body-medium",
           location:
             ".text-body-small.inline.t-black--light.break-words, .pv-text-details__left-panel .text-body-small",
           about: ".pv-about-section .full-width .text-body-medium.break-words",
-          experience: ".pv-profile-section.experience-section .pv-entity__summary-info",
-          education: ".pv-profile-section.education-section .pv-entity__summary-info",
+          experience:
+            ".pv-profile-section.experience-section .pv-entity__summary-info",
+          education:
+            ".pv-profile-section.education-section .pv-entity__summary-info",
           skills: ".pv-skill-category-entity__name-text",
           connections: ".t-16.t-black.t-normal span",
         },
@@ -1789,7 +1873,8 @@ class DataScraper {
               .slice(0, 3);
 
             if (values.length > 0) {
-              data[`${site.replace(".com", "")}_${key}`] = values.length === 1 ? values[0] : values;
+              data[`${site.replace(".com", "")}_${key}`] =
+                values.length === 1 ? values[0] : values;
             }
           }
         });

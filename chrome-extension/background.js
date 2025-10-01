@@ -1,8 +1,9 @@
 // Background script for Chrome extension
 // Handles extension lifecycle, message passing, and background tasks
 
-// Load API service and schema mapper dynamically
+// Load API service, storage service and schema mapper dynamically
 self.importScripts("services/apiService.js");
+self.importScripts("services/storageService.js");
 self.importScripts("utils/schemaMapper.js");
 
 let backgroundManager = null;
@@ -113,7 +114,10 @@ class BackgroundManager {
     try {
       switch (request.action) {
         case "saveScrapedData": {
-          const scrapedResult = await this.handleSaveScrapedData(request, sender);
+          const scrapedResult = await this.handleSaveScrapedData(
+            request,
+            sender
+          );
           sendResponse(scrapedResult);
           break;
         }
@@ -169,19 +173,20 @@ class BackgroundManager {
 
   async handleSaveScrapedData(request, _sender) {
     try {
-      const { access_token, user_data, workspace_uid } = await chrome.storage.local.get([
+      console.log("🔍 Starting to save scraped data...");
+      console.log("Request data:", request.data);
+
+      const { access_token, user_data } = await chrome.storage.local.get([
         "access_token",
         "user_data",
-        "workspace_uid",
       ]);
 
       if (!access_token) {
+        console.log("❌ Not authenticated");
         return { success: false, error: "Not authenticated" };
       }
 
-      if (!workspace_uid) {
-        return { success: false, error: "No workspace selected. Please login again." };
-      }
+      console.log("✅ User authenticated:", user_data?.email);
 
       // Prioritize site-specific data, then normalize comprehensive data
       let prioritizedData = {};
@@ -232,27 +237,65 @@ class BackgroundManager {
         : prioritizedData;
 
       // Use ONLY the normalized schema fields - no extra data
+      // Combine all data without scraping context
       const enhancedData = {
         ...normalizedData,
-        // Only add scraping context if explicitly needed
-        scraping_context: {
-          site_type: request.data.siteType,
-          user_agent: navigator.userAgent,
-          scraping_method: "chrome_extension",
-          page_loaded_at: request.data.timestamp,
-        },
       };
 
-      // Use API service to save data
-      const result = await self.dataService.saveScrapedData(
-        request.data.url,
-        enhancedData,
-        new URL(request.data.url).hostname,
-        workspace_uid,
+      // Save data to local storage instead of backend
+      if (!self.storageService) {
+        console.log("❌ Storage service not available");
+        throw new Error("Storage service not available");
+      }
+
+      console.log("💾 Saving data to local storage...");
+      console.log("Enhanced data:", enhancedData);
+
+      // Save ONLY the new scraped data (replace all previous data)
+      console.log(
+        "💾 Saving new scraped data (replacing all previous data)..."
       );
-      return { success: true, data: result };
+
+      // Get active workspace UID from localStorage
+      const workspaceUid = this.getActiveWorkspaceUid();
+      console.log("🏢 Using workspace UID:", workspaceUid);
+
+      const newDataItem = {
+        url: request.data.url,
+        siteType: request.data.siteType,
+        scrapedData: enhancedData,
+        timestamp: request.data.timestamp,
+        user_id: user_data?.uid || "unknown",
+        workspace_uid: workspaceUid,
+      };
+
+      // Replace all scraped data with just this one item
+      await self.storageService.setScrapedData([newDataItem]);
+
+      // Update statistics
+      await self.storageService.incrementScrapedCount();
+
+      console.log("✅ Data saved successfully to local storage");
+      return { success: true, message: "Data saved locally" };
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  }
+
+  // Workspace Management Functions
+  async getActiveWorkspaceUid() {
+    try {
+      // In service worker context, we need to use chrome.storage.local instead of localStorage
+      const result = await chrome.storage.local.get(["active_workspace_uid"]);
+      const workspaceUid = result.active_workspace_uid;
+      console.log(
+        "🔍 Retrieved active workspace UID from storage:",
+        workspaceUid
+      );
+      return workspaceUid;
+    } catch (error) {
+      console.error("❌ Error retrieving workspace UID:", error);
+      return null;
     }
   }
 }
