@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FoundersHub Data Scraper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Chrome extension for scraping data from websites and sending it to FoundersHub backend",
   "permissions": [
     "storage",
@@ -16,7 +16,7 @@
     "https://*.github.com/*",
     "https://*.flipkart.com/*",
     "https://*.myntra.com/*",
-    "http://localhost:8000/*"
+    "https://api.foundershub.ai/*"
   ],
   "background": {
     "service_worker": "background.js"

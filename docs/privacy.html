@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — FoundersHub Data Scraper</title>
+  <style>
+    :root{color-scheme:light dark}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.6;margin:0;padding:0;background:#fff;color:#111}
+    main{max-width:820px;margin:0 auto;padding:32px}
+    h1{font-size:28px;margin:0 0 8px}
+    h2{font-size:20px;margin:28px 0 8px}
+    p,li{font-size:16px;margin:8px 0}
+    ul{padding-left:20px}
+    .muted{opacity:.7}
+    .box{border:1px solid #e5e7eb;border-radius:10px;padding:16px;background:#fafafa}
+    @media (prefers-color-scheme: dark){
+      body{background:#0b0b0c;color:#e7e9ea}
+      .box{border-color:#222428;background:#111214}
+    }
+    a{color:inherit}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Privacy Policy — FoundersHub Data Scraper</h1>
+    <p class="muted">Effective date: <span id="effective-date"></span></p>
+
+    <h2>1) Who we are</h2>
+    <p>FoundersHub Data Scraper (the “Extension”). Contact: <a href="mailto:support@your-domain.com">support@your-domain.com</a>. Website: <a href="https://your-domain.com">https://your-domain.com</a>.</p>
+
+    <h2>2) What we collect</h2>
+    <ul>
+      <li>Page content you explicitly choose to scrape (e.g., visible profile fields).</li>
+      <li>Basic extension usage events (e.g., button clicks, error states).</li>
+      <li>Authentication tokens necessary to access your account.</li>
+    </ul>
+    <p>We do not collect your browsing history.</p>
+
+    <h2>3) How we use data</h2>
+    <ul>
+      <li>Provide core functionality (scraping selected fields and saving to your account).</li>
+      <li>Authenticate your account and maintain session state.</li>
+      <li>Improve reliability and troubleshoot issues.</li>
+    </ul>
+
+    <h2>4) Data sources</h2>
+    <p>Only pages you visit and choose to scrape. The Extension does not operate on pages you do not open or authorize via Chrome permissions.</p>
+
+    <h2>5) Where data is processed</h2>
+    <ul>
+      <li>In the browser: extraction, normalization, and display.</li>
+      <li>On our servers: secure HTTPS APIs at <a href="https://api.foundershub.ai">https://api.foundershub.ai</a> (or your configured API domain) for your account.</li>
+    </ul>
+
+    <h2>6) Storage and retention</h2>
+    <ul>
+      <li>Authentication tokens are stored locally using Chrome storage and cleared on logout.</li>
+      <li>Scraped data you choose to save remains in your account until you delete it or your account is closed.</li>
+    </ul>
+
+    <h2>7) Sharing and selling</h2>
+    <p>We do not sell your data. We do not share data with third parties, except subprocessors necessary to operate our service (e.g., hosting), bound by contractual safeguards.</p>
+
+    <h2>8) Security</h2>
+    <ul>
+      <li>HTTPS for all network communication.</li>
+      <li>Access control via JWT tokens.</li>
+      <li>Least‑privilege Chrome permissions (activeTab, scripting, tabs, storage, and host permissions for supported sites and the API domain).</li>
+    </ul>
+
+    <h2>9) Your controls</h2>
+    <ul>
+      <li>You decide when to scrape and what to save.</li>
+      <li>Clear local data by logging out (tokens removed from Chrome storage).</li>
+      <li>Request deletion of account data via <a href="mailto:support@your-domain.com">support@your-domain.com</a>.</li>
+    </ul>
+
+    <h2>10) Children</h2>
+    <p>Not intended for children under 16. We do not knowingly collect data from children.</p>
+
+    <h2>11) International transfers</h2>
+    <p>Data may be processed in regions where we or our subprocessors operate. We apply contractual safeguards as required.</p>
+
+    <h2>12) Changes</h2>
+    <p>We may update this policy. We will update the effective date and, where required, provide notice.</p>
+
+    <h2>13) Contact</h2>
+    <p>Email: <a href="mailto:support@your-domain.com">support@your-domain.com</a></p>
+
+    <div class="box">
+      <strong>Chrome Web Store Disclosures</strong>
+      <ul>
+        <li>Data collected: user‑selected page content, app activity (extension UI events), app info (errors).</li>
+        <li>Purpose: app functionality.</li>
+        <li>Shared: No. Sold: No.</li>
+        <li>Security: Encrypted in transit (HTTPS).</li>
+        <li>Deletion: On request; local tokens cleared on logout.</li>
+      </ul>
+    </div>
+  </main>
+  <script>
+    document.getElementById('effective-date').textContent = new Date().toISOString().slice(0,10);
+  </script>
+</body>
+</html>

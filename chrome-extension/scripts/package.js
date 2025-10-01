@@ -10,25 +10,27 @@ console.log("📦 Packaging FoundersHub Chrome Extension...");
 const manifest = JSON.parse(fs.readFileSync("manifest.json", "utf8"));
 const version = manifest.version;
 
-// Create dist directory
-if (!fs.existsSync("dist")) {
-  fs.mkdirSync("dist");
+// Recreate clean dist directory
+if (fs.existsSync("dist")) {
+  execSync('rm -rf "dist"');
 }
+fs.mkdirSync("dist");
 
 // Files to include in the package
 const filesToCopy = [
   "manifest.json",
   "background.js",
-  "popup/",
-  "content-scripts/",
-  "services/",
-  "utils/",
-  "icons/",
+  "config.js",
+  ".env",
+  "popup",
+  "content-scripts",
+  "services",
+  "utils",
+  "icons",
   "README.md",
   "LICENSE",
 ];
 
-console.log("📋 Copying files...");
 
 // Copy files to dist
 filesToCopy.forEach((file) => {
@@ -37,10 +39,9 @@ filesToCopy.forEach((file) => {
 
   if (fs.existsSync(srcPath)) {
     if (fs.statSync(srcPath).isDirectory()) {
-      // Copy directory recursively
-      execSync(`cp -r "${srcPath}" "${path.dirname(destPath)}"`);
+      // Copy directory recursively, preserving folder name
+      execSync(`cp -R "${srcPath}" "${path.join(process.cwd(), "dist")}"`);
     } else {
-      // Copy file
       fs.copyFileSync(srcPath, destPath);
     }
     console.log(`✅ Copied: ${file}`);
