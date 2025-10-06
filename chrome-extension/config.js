@@ -7,22 +7,17 @@ class ConfigLoader {
 
   async loadConfig() {
     try {
-      console.log("🔄 Loading .env file...");
       // Try to load .env file
       const response = await fetch(chrome.runtime.getURL(".env"));
-      console.log("📡 .env file response:", response.status, response.ok);
 
       if (response.ok) {
         const envContent = await response.text();
-        console.log("📄 .env file content:", envContent);
         this.config = this.parseEnvFile(envContent);
-        console.log("✅ Parsed config:", this.config);
       } else {
         // No fallback - require .env file
         throw new Error("Could not load .env file");
       }
     } catch (error) {
-      console.error("Failed to load .env file:", error);
       throw new Error(
         "Environment configuration is required. Please ensure .env file exists."
       );

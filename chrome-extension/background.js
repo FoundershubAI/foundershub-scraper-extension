@@ -173,20 +173,14 @@ class BackgroundManager {
 
   async handleSaveScrapedData(request, _sender) {
     try {
-      console.log("🔍 Starting to save scraped data...");
-      console.log("Request data:", request.data);
-
       const { access_token, user_data } = await chrome.storage.local.get([
         "access_token",
         "user_data",
       ]);
 
       if (!access_token) {
-        console.log("❌ Not authenticated");
         return { success: false, error: "Not authenticated" };
       }
-
-      console.log("✅ User authenticated:", user_data?.email);
 
       // Prioritize site-specific data, then normalize comprehensive data
       let prioritizedData = {};
@@ -244,21 +238,13 @@ class BackgroundManager {
 
       // Save data to local storage instead of backend
       if (!self.storageService) {
-        console.log("❌ Storage service not available");
         throw new Error("Storage service not available");
       }
 
-      console.log("💾 Saving data to local storage...");
-      console.log("Enhanced data:", enhancedData);
-
       // Save ONLY the new scraped data (replace all previous data)
-      console.log(
-        "💾 Saving new scraped data (replacing all previous data)..."
-      );
 
       // Get active workspace UID from localStorage
       const workspaceUid = this.getActiveWorkspaceUid();
-      console.log("🏢 Using workspace UID:", workspaceUid);
 
       const newDataItem = {
         url: request.data.url,
@@ -275,7 +261,6 @@ class BackgroundManager {
       // Update statistics
       await self.storageService.incrementScrapedCount();
 
-      console.log("✅ Data saved successfully to local storage");
       return { success: true, message: "Data saved locally" };
     } catch (error) {
       return { success: false, error: error.message };
@@ -288,13 +273,9 @@ class BackgroundManager {
       // In service worker context, we need to use chrome.storage.local instead of localStorage
       const result = await chrome.storage.local.get(["active_workspace_uid"]);
       const workspaceUid = result.active_workspace_uid;
-      console.log(
-        "🔍 Retrieved active workspace UID from storage:",
-        workspaceUid
-      );
+
       return workspaceUid;
     } catch (error) {
-      console.error("❌ Error retrieving workspace UID:", error);
       return null;
     }
   }

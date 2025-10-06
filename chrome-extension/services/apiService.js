@@ -37,7 +37,6 @@ async function loadConfig() {
       });
     }
   } catch (error) {
-    console.warn("Error loading config:", error);
     return config;
   }
 }
@@ -88,9 +87,6 @@ class ApiService {
   // Generic request method
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    console.log("Making API request to:", url);
-    console.log("Base URL:", this.baseURL);
-    console.log("Endpoint:", endpoint);
 
     const config = {
       method: "GET",
@@ -192,19 +188,13 @@ const apiService = new ApiService();
 // Initialize config loading
 loadConfig()
   .then(() => {
-    console.log("Configuration loaded:", config);
-    console.log("NEXT_PUBLIC_API_URL from config:", config.NEXT_PUBLIC_API_URL);
     // Update NEXT_PUBLIC_API_URL and apiService baseURL
     NEXT_PUBLIC_API_URL = config.NEXT_PUBLIC_API_URL;
-    console.log("NEXT_PUBLIC_API_URL updated to:", NEXT_PUBLIC_API_URL);
+
     // Update the local apiService instance
     apiService.updateBaseURL();
-    console.log("apiService baseURL updated to:", apiService.baseURL);
   })
-  .catch((error) => {
-    console.error("❌ Failed to load config:", error);
-    console.log("❌ Using null baseURL - API calls will fail");
-  });
+  .catch(() => {});
 
 // Authentication endpoints
 const authService = {

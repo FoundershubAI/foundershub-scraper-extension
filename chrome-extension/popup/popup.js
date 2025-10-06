@@ -120,7 +120,6 @@ class PopupManager {
 
         // Initialize active workspace from login response
         const workspaceUid = await this.initializeActiveWorkspace(userData);
-        console.log("🏢 Active workspace UID:", workspaceUid);
 
         this.showSuccess("Login successful!");
         setTimeout(() => {
@@ -210,7 +209,6 @@ class PopupManager {
 
   // Refresh Data Method - Clear all data
   async handleRefreshData() {
-    console.log("🔄 Refresh data button clicked - clearing all data");
     this.refreshDataBtn.disabled = true;
     this.refreshDataBtn.textContent = "Clearing...";
 
@@ -224,7 +222,6 @@ class PopupManager {
 
       this.showSuccess("All data cleared successfully!");
     } catch (error) {
-      console.error("❌ Error clearing data:", error);
       this.showError("Failed to clear data");
     } finally {
       this.refreshDataBtn.disabled = false;
@@ -244,25 +241,18 @@ class PopupManager {
 
   async loadScrapedData() {
     try {
-      console.log("🔄 Loading scraped data from local storage...");
-
       // Load scraped data from local storage (should be only one item)
       const scrapedDataArray = await window.storageService.getScrapedData();
-
-      console.log("📊 Found scraped data:", scrapedDataArray);
 
       if (scrapedDataArray && scrapedDataArray.length > 0) {
         // Store the data for preview (should be only one item)
         this.scrapedData = scrapedDataArray;
         this.updateScrapedDataPreview();
-        console.log("✅ Loaded scraped data");
       } else {
         this.scrapedData = null;
         this.updateScrapedDataPreview();
-        console.log("ℹ️ No scraped data found");
       }
     } catch (error) {
-      console.error("❌ Error loading scraped data:", error);
       this.scrapedData = null;
       this.updateScrapedDataPreview();
     }
@@ -270,8 +260,6 @@ class PopupManager {
 
   updateScrapedDataPreview() {
     if (this.scrapedData && this.scrapedData.length > 0) {
-      console.log("📋 Updating preview with scraped data");
-
       // Show only the actual scraped data (should be only one item now)
       const scrapedDataItem = this.scrapedData[0];
       const actualScrapedData = scrapedDataItem.scrapedData;
@@ -289,17 +277,13 @@ class PopupManager {
 
   async loadTemplates() {
     try {
-      console.log("🔄 Loading templates...");
-
       // Wait for config to be loaded
-      console.log("⏳ Waiting for config to load...");
+
       await this.waitForConfig();
 
       const workspaceUid = this.getActiveWorkspaceUid();
-      console.log("🔍 Retrieved workspace UID:", workspaceUid);
 
       if (!workspaceUid) {
-        console.log("❌ No workspace UID found");
         this.templatesContainer.innerHTML =
           '<p class="loading">No workspace selected</p>';
         return;
@@ -308,21 +292,17 @@ class PopupManager {
       this.templatesContainer.innerHTML =
         '<p class="loading">Loading templates...</p>';
 
-      console.log("📡 Fetching templates for workspace:", workspaceUid);
       const response = await this.fetchTemplates(workspaceUid);
-      console.log("📡 Templates response:", response);
 
       if (response && response.data && response.data.results) {
         this.templates = response.data.results;
-        console.log("✅ Templates loaded:", this.templates.length);
+
         this.renderTemplates();
       } else {
-        console.log("❌ No templates in response");
         this.templatesContainer.innerHTML =
           '<p class="loading">No templates found</p>';
       }
     } catch (error) {
-      console.error("❌ Error loading templates:", error);
       this.templatesContainer.innerHTML =
         '<p class="loading">Error loading templates</p>';
     }
@@ -336,13 +316,8 @@ class PopupManager {
           window.apiService.baseURL &&
           window.apiService.baseURL !== null
         ) {
-          console.log("✅ Config loaded, API URL:", window.apiService.baseURL);
           resolve();
         } else {
-          console.log(
-            "⏳ Config not ready yet, API URL:",
-            window.apiService?.baseURL
-          );
           setTimeout(checkConfig, 100);
         }
       };
@@ -595,10 +570,7 @@ class PopupManager {
   // Workspace Management Functions
   async initializeActiveWorkspace(userData) {
     try {
-      console.log("🏢 Initializing active workspace from user data:", userData);
-
       if (!userData.accounts || userData.accounts.length === 0) {
-        console.log("❌ No accounts found in user data");
         return null;
       }
 
@@ -609,10 +581,6 @@ class PopupManager {
             (ws) => ws.is_default === true
           );
           if (defaultWorkspace) {
-            console.log(
-              "✅ Found owner account with default workspace:",
-              defaultWorkspace.uid
-            );
             await this.setActiveWorkspaceUid(defaultWorkspace.uid);
             return defaultWorkspace.uid;
           }
@@ -626,7 +594,6 @@ class PopupManager {
             (ws) => ws.is_default === true
           );
           if (defaultWorkspace) {
-            console.log("✅ Found default workspace:", defaultWorkspace.uid);
             await this.setActiveWorkspaceUid(defaultWorkspace.uid);
             return defaultWorkspace.uid;
           }
@@ -637,19 +604,14 @@ class PopupManager {
       for (const account of userData.accounts) {
         if (account.workspaces && account.workspaces.length > 0) {
           const firstWorkspace = account.workspaces[0];
-          console.log(
-            "✅ Using first available workspace:",
-            firstWorkspace.uid
-          );
+
           await this.setActiveWorkspaceUid(firstWorkspace.uid);
           return firstWorkspace.uid;
         }
       }
 
-      console.log("❌ No workspaces found in any account");
       return null;
     } catch (error) {
-      console.error("❌ Error initializing active workspace:", error);
       return null;
     }
   }
@@ -659,31 +621,18 @@ class PopupManager {
       // Store in both localStorage and chrome.storage.local for cross-context access
       localStorage.setItem("active_workspace_uid", workspaceUid);
       await chrome.storage.local.set({ active_workspace_uid: workspaceUid });
-      console.log("💾 Stored active workspace UID:", workspaceUid);
-    } catch (error) {
-      console.error("❌ Error storing workspace UID:", error);
-    }
+    } catch (error) {}
   }
 
   getActiveWorkspaceUid() {
     try {
       const workspaceUid = localStorage.getItem("active_workspace_uid");
-      console.log(
-        "🔍 Retrieved active workspace UID from localStorage:",
-        workspaceUid
-      );
 
       // Also check chrome.storage.local for debugging
-      chrome.storage.local.get(["active_workspace_uid"]).then((result) => {
-        console.log(
-          "🔍 Retrieved active workspace UID from chrome.storage.local:",
-          result.active_workspace_uid
-        );
-      });
+      chrome.storage.local.get(["active_workspace_uid"]).then((result) => {});
 
       return workspaceUid;
     } catch (error) {
-      console.error("❌ Error retrieving workspace UID:", error);
       return null;
     }
   }
